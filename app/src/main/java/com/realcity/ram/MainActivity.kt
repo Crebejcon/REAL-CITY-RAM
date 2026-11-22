@@ -158,7 +158,7 @@ class MainActivity : Activity() {
         val c=card()
         val entry=EditText(this).apply {
             hint="Nome ou apelido do amigo"; setHintTextColor(muted); setTextColor(Color.WHITE)
-            textSize=12f; singleLine=true; setPadding(dp(8),dp(8),dp(8),dp(8))
+            textSize=12f; isSingleLine=true; setPadding(dp(8),dp(8),dp(8),dp(8))
             setBackgroundColor(Color.rgb(35,40,52))
         }
         c.addView(entry)
