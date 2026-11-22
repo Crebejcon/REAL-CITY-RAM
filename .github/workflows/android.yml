@@ -4,7 +4,10 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'REAL_CITY_RAM_ANDROID_V2.zip'
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
       - '.github/workflows/android.yml'
 
 permissions:
@@ -40,10 +43,15 @@ jobs:
           yes | "$SDKMANAGER" --licenses || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Extract project
+      - name: Verify Android source files
         run: |
-          mkdir project
-          unzip -q REAL_CITY_RAM_ANDROID_V2.zip -d project
+          test -f settings.gradle.kts
+          test -f build.gradle.kts
+          test -f app/build.gradle.kts
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/realcity/ram/MainActivity.kt
+          test -f app/src/main/res/values/styles.xml
+          echo "Android project files verified."
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -51,11 +59,11 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build debug APK
-        run: gradle -p project assembleDebug
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: REAL-CITY-RAM-APK
-          path: project/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
