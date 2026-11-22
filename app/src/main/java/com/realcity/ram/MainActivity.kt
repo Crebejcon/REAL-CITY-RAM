@@ -11,9 +11,11 @@ import android.provider.Settings
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.media.projection.MediaProjectionManager
 import kotlin.math.*
 
 class MainActivity : Activity() {
+    private val captureRequestCode = 7401
     private val prefs by lazy { getSharedPreferences("ram_settings_v2", Context.MODE_PRIVATE) }
     private lateinit var root: LinearLayout
     private lateinit var content: LinearLayout
@@ -31,6 +33,18 @@ class MainActivity : Activity() {
         applyScreenSetting()
     }
     override fun onResume() { super.onResume(); applyScreenSetting() }
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
+        super.onActivityResult(requestCode,resultCode,data)
+        if(requestCode==captureRequestCode) {
+            if(resultCode==Activity.RESULT_OK && data!=null) {
+                val service=Intent(this,ScreenCaptureService::class.java)
+                    .putExtra(ScreenCaptureService.EXTRA_RESULT_CODE,resultCode)
+                    .putExtra(ScreenCaptureService.EXTRA_RESULT_DATA,data)
+                if(Build.VERSION.SDK_INT>=26) startForegroundService(service) else startService(service)
+                Toast.makeText(this,"Permissão de captura concedida.",Toast.LENGTH_SHORT).show()
+            } else Toast.makeText(this,"Captura cancelada.",Toast.LENGTH_SHORT).show()
+        }
+    }
     private fun applyScreenSetting() {
         if(prefs.getBoolean("s_awake",false)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -205,6 +219,37 @@ class MainActivity : Activity() {
         content.addView(Button(this).apply { text="RESTAURAR CONFIGURAÇÕES"; setOnClickListener { prefs.edit().clear().apply(); applyScreenSetting(); showTab() } })
     }
     private fun debugTab() {
+        section("CAPTURA DE TELA","Captura autorizada pelo Android para diagnóstico. O app mede quadros e resolução; não analisa jogadores nem controla a mira.")
+        val capture=card()
+        val captureStatus=TextView(this).apply {
+            textSize=11f; setTextColor(Color.WHITE)
+            text=if(prefs.getBoolean("capture_running",false)) "Captura: ativa" else "Captura: desligada"
+        }
+        capture.addView(captureStatus)
+        capture.addView(Button(this).apply {
+            text="INICIAR CAPTURA AUTORIZADA"
+            setOnClickListener {
+                val manager=getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                startActivityForResult(manager.createScreenCaptureIntent(),captureRequestCode)
+            }
+        })
+        capture.addView(Button(this).apply {
+            text="PARAR CAPTURA"
+            setOnClickListener {
+                startService(Intent(this@MainActivity,ScreenCaptureService::class.java).setAction(ScreenCaptureService.ACTION_STOP))
+                captureStatus.text="Captura: desligada"
+            }
+        })
+        val frameStatus=TextView(this).apply { textSize=10f; setTextColor(muted); text="Quadros recebidos: ${prefs.getLong("capture_frames",0)}\nÚltima resolução: ${prefs.getString("capture_size","—")}" }
+        capture.addView(frameStatus)
+        capture.addView(Button(this).apply {
+            text="ATUALIZAR STATUS"
+            setOnClickListener {
+                captureStatus.text=if(prefs.getBoolean("capture_running",false)) "Captura: ativa" else "Captura: desligada"
+                frameStatus.text="Quadros recebidos: ${prefs.getLong("capture_frames",0)}\nÚltima resolução: ${prefs.getString("capture_size","—")}"
+            }
+        })
+        content.addView(note("O Android exibirá a confirmação do compartilhamento de tela. A captura não é salva em arquivo e para quando você interromper o serviço."))
         section("DEBUG TOOLS","Métricas do processo deste aplicativo; não são métricas do Real City.")
         val c=card()
         val metrics=TextView(this).apply { textSize=12f; setTextColor(Color.WHITE) }; c.addView(metrics)
