@@ -7,6 +7,10 @@ import android.graphics.*
 import android.view.*
 import android.widget.*
 import android.os.Debug
+import android.provider.Settings
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import kotlin.math.*
 
 class MainActivity : Activity() {
@@ -34,7 +38,20 @@ class MainActivity : Activity() {
         root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setBackgroundColor(bg); setPadding(dp(12),dp(10),dp(12),dp(8)) }
         val header=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
         header.addView(TextView(this).apply { text="REAL CITY RAM"; textSize=23f; setTextColor(Color.WHITE); setTypeface(null,Typeface.BOLD) })
-        header.addView(TextView(this).apply { text="V2 • ANDROID TRAINING & DIAGNOSTICS"; textSize=10f; setTextColor(red); setPadding(0,dp(3),0,dp(10)) })
+        header.addView(TextView(this).apply { text="OVERLAY ANDROID • REAL CITY BETA"; textSize=10f; setTextColor(red); setPadding(0,dp(3),0,dp(8)) })
+        header.addView(Button(this).apply {
+            text="ATIVAR PAINEL FLUTUANTE"
+            setOnClickListener {
+                if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this@MainActivity)) {
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + packageName)))
+                    Toast.makeText(this@MainActivity, "Autorize aparecer sobre outros apps e volte aqui.", Toast.LENGTH_LONG).show()
+                } else {
+                    val service = Intent(this@MainActivity, OverlayService::class.java)
+                    if (Build.VERSION.SDK_INT >= 26) startForegroundService(service) else startService(service)
+                    Toast.makeText(this@MainActivity, "Painel flutuante ativado.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
         root.addView(header)
         val tabs=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
         listOf("VISUAL","AIM","PLAYER","SETTINGS","DEBUG").forEach { t ->
