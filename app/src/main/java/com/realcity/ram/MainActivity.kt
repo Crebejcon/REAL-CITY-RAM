@@ -25,6 +25,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activeTab = intent.getStringExtra("open_tab") ?: "VISUAL"
         window.statusBarColor=bg; window.navigationBarColor=bg
         buildShell(); showTab()
         applyScreenSetting()
@@ -54,10 +55,10 @@ class MainActivity : Activity() {
         })
         root.addView(header)
         val tabs=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
-        listOf("VISUAL","AIM","PLAYER","SETTINGS","DEBUG").forEach { t ->
+        listOf("VISUAL","AIM","AMIGOS","PLAYER","SETTINGS","DEBUG").forEach { t ->
             tabs.addView(TextView(this).apply {
-                text=t; textSize=9f; gravity=Gravity.CENTER; setTextColor(if(t==activeTab) Color.WHITE else muted)
-                setPadding(dp(4),dp(12),dp(4),dp(12)); setBackgroundColor(if(t==activeTab) red else panel)
+                text=t; textSize=8f; gravity=Gravity.CENTER; setTextColor(if(t==activeTab) Color.WHITE else muted)
+                setPadding(dp(3),dp(12),dp(3),dp(12)); setBackgroundColor(if(t==activeTab) red else panel)
                 setOnClickListener { activeTab=t; showTab() }
             },LinearLayout.LayoutParams(0,dp(40),1f))
         }
@@ -73,6 +74,7 @@ class MainActivity : Activity() {
         when(activeTab) {
             "VISUAL" -> visualTab()
             "AIM" -> aimTab()
+            "AMIGOS" -> friendsTab()
             "PLAYER" -> playerTab()
             "SETTINGS" -> settingsTab()
             else -> debugTab()
@@ -128,7 +130,7 @@ class MainActivity : Activity() {
         content.addView(note("Alvos e distâncias são simulados. O filtro de equipe usa uma classificação fictícia."))
     }
     private fun aimTab() {
-        section("AIM TRAINING","Reconhecimento e acompanhamento apenas dos alvos fictícios desenhados neste simulador local.")
+        section("AIM TRAINING","Assistência visual somente no campo de treinamento local.")
         val c=card()
         toggle(c,"Aim Assist do treinamento","aim_enabled",false)
         toggle(c,"FOV Circle","aim_fov",true)
@@ -149,7 +151,39 @@ class MainActivity : Activity() {
         val training=TrainingView(this,prefs,true)
         content.addView(training,LinearLayout.LayoutParams(-1,dp(370)))
         content.addView(Button(this).apply { text="REINICIAR TREINO"; setOnClickListener { training.resetTargets() } })
-        content.addView(note("Os três arquivos enviados eram duas interfaces React duplicadas e uma ponte Python que gerava alvos, latência e offsets aleatórios. Eles não capturavam a tela nem detectavam jogadores. Seus controles úteis foram adaptados para Android; a simulação aleatória e Auto-Shoot/Lock Target não foram incorporados. Este treino não captura nem controla o Real City."))
+        content.addView(note("O Aim Assist move somente a mira dentro deste simulador. Não captura, identifica ou acompanha jogadores do Real City."))
+    }
+    private fun friendsTab() {
+        section("AMIGOS","Lista privada salva neste aparelho. Os nomes não são procurados nem rastreados dentro do jogo.")
+        val c=card()
+        val entry=EditText(this).apply {
+            hint="Nome ou apelido do amigo"; setHintTextColor(muted); setTextColor(Color.WHITE)
+            textSize=12f; singleLine=true; setPadding(dp(8),dp(8),dp(8),dp(8))
+            setBackgroundColor(Color.rgb(35,40,52))
+        }
+        c.addView(entry)
+        c.addView(Button(this).apply {
+            text="ADICIONAR AMIGO"
+            setOnClickListener {
+                val name=entry.text.toString().trim()
+                if(name.isBlank()) { Toast.makeText(this@MainActivity,"Digite um nome.",Toast.LENGTH_SHORT).show(); return@setOnClickListener }
+                val list=prefs.getStringSet("friend_names", emptySet())!!.toMutableSet()
+                if(list.any { it.equals(name,true) }) Toast.makeText(this@MainActivity,"Esse amigo já está na lista.",Toast.LENGTH_SHORT).show()
+                else { list.add(name); prefs.edit().putStringSet("friend_names",list).apply(); entry.text.clear(); showTab() }
+            }
+        })
+        val names=prefs.getStringSet("friend_names", emptySet())!!.toList().sorted()
+        if(names.isEmpty()) c.addView(note("Nenhum amigo cadastrado ainda."))
+        names.forEach { name ->
+            val row=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL; orientation=LinearLayout.HORIZONTAL }
+            row.addView(TextView(this).apply { text="●  $name"; textSize=13f; setTextColor(Color.WHITE) },LinearLayout.LayoutParams(0,-2,1f))
+            row.addView(Button(this).apply { text="REMOVER"; textSize=9f; setOnClickListener {
+                val updated=prefs.getStringSet("friend_names", emptySet())!!.toMutableSet()
+                updated.remove(name); prefs.edit().putStringSet("friend_names",updated).apply(); showTab()
+            } })
+            c.addView(row)
+        }
+        content.addView(note("A lista serve para organização pessoal. Não identifica pessoas na captura de tela nem altera a partida."))
     }
     private fun playerTab() {
         section("PLAYER MONITOR","Dados gerados localmente para NPCs fictícios.")
@@ -160,7 +194,7 @@ class MainActivity : Activity() {
         toggle(c,"Distance Monitor","p_distance",true)
         val status=TextView(this).apply { textSize=12f; setTextColor(Color.WHITE); setPadding(0,dp(8),0,0) }
         c.addView(status)
-        status.text="Alvo A • NPC de treino • 100 HP • (25, 28)\\nAlvo B • NPC de treino • 80 HP • (72, 38)\\nAlvo C • Aliado simulado • 65 HP • (52, 62)"
+        status.text="Alvo A • NPC de treino • 100 HP • (25, 28)\nAlvo B • NPC de treino • 80 HP • (72, 38)\nAlvo C • Aliado simulado • 65 HP • (52, 62)"
     }
     private fun settingsTab() {
         section("SETTINGS","Preferências gravadas no armazenamento privado do app.")
@@ -176,7 +210,7 @@ class MainActivity : Activity() {
         val metrics=TextView(this).apply { textSize=12f; setTextColor(Color.WHITE) }; c.addView(metrics)
         fun refresh() {
             val r=Runtime.getRuntime()
-            metrics.text="Heap Java usado: ${(r.totalMemory()-r.freeMemory())/1048576} MB\\nHeap Java máximo: ${r.maxMemory()/1048576} MB\\nHeap nativo alocado: ${Debug.getNativeHeapAllocatedSize()/1048576} MB\\nModelo: ${android.os.Build.MODEL}\\nAndroid: ${android.os.Build.VERSION.RELEASE}\\nABI: ${android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "N/D"}"
+            metrics.text="Heap Java usado: ${(r.totalMemory()-r.freeMemory())/1048576} MB\nHeap Java máximo: ${r.maxMemory()/1048576} MB\nHeap nativo alocado: ${Debug.getNativeHeapAllocatedSize()/1048576} MB\nModelo: ${android.os.Build.MODEL}\nAndroid: ${android.os.Build.VERSION.RELEASE}\nABI: ${android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "N/D"}"
         }
         refresh(); content.addView(Button(this).apply { text="ATUALIZAR MÉTRICAS"; setOnClickListener { refresh() } })
     }
