@@ -128,12 +128,14 @@ class MainActivity : Activity() {
         content.addView(note("Alvos e distâncias são simulados. O filtro de equipe usa uma classificação fictícia."))
     }
     private fun aimTab() {
-        section("AIM TRAINING","Pratique seleção e acompanhamento de alvos dentro do simulador.")
+        section("AIM TRAINING","Reconhecimento e acompanhamento apenas dos alvos fictícios desenhados neste simulador local.")
         val c=card()
         toggle(c,"Aim Assist do treinamento","aim_enabled",false)
         toggle(c,"FOV Circle","aim_fov",true)
         toggle(c,"Line of Sight (simulado)","aim_los",true,"Alvos atrás de um obstáculo fictício são ignorados.")
         slider(c,"FOV","aim_fov_size",30,300,120," px")
+        slider(c,"Sensibilidade","aim_sensitivity",10,100,75,"%")
+        slider(c,"Predição visual","aim_prediction",0,100,45,"%")
         slider(c,"Smoothness","aim_smooth",1,100,35,"%")
         slider(c,"Distância máxima","aim_range",10,300,120," m")
         val group=RadioGroup(this).apply { orientation=RadioGroup.HORIZONTAL }
@@ -147,7 +149,7 @@ class MainActivity : Activity() {
         val training=TrainingView(this,prefs,true)
         content.addView(training,LinearLayout.LayoutParams(-1,dp(370)))
         content.addView(Button(this).apply { text="REINICIAR TREINO"; setOnClickListener { training.resetTargets() } })
-        content.addView(note("Aim Assist move somente o retículo dentro desta área. Não envia toques nem controla outros aplicativos."))
+        content.addView(note("Os três arquivos enviados eram duas interfaces React duplicadas e uma ponte Python que gerava alvos, latência e offsets aleatórios. Eles não capturavam a tela nem detectavam jogadores. Seus controles úteis foram adaptados para Android; a simulação aleatória e Auto-Shoot/Lock Target não foram incorporados. Este treino não captura nem controla o Real City."))
     }
     private fun playerTab() {
         section("PLAYER MONITOR","Dados gerados localmente para NPCs fictícios.")
