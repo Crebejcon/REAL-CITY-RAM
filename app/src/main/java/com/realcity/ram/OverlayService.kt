@@ -76,8 +76,8 @@ class OverlayService : Service() {
             elevation=dp(12).toFloat()
         }
         val head=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL }
-        head.addView(TextView(this).apply { text="REAL CITY RAM"; textSize=16f; setTextColor(Color.WHITE); typeface=Typeface.DEFAULT_BOLD },
-            LinearLayout.LayoutParams(0,-2,1f))
+        val title = TextView(this).apply { text="REAL CITY RAM  ⋮"; textSize=16f; setTextColor(Color.WHITE); typeface=Typeface.DEFAULT_BOLD; gravity=Gravity.CENTER_VERTICAL }
+        head.addView(title, LinearLayout.LayoutParams(0,-2,1f))
         head.addView(TextView(this).apply {
             text="×"; textSize=24f; setTextColor(Color.WHITE); gravity=Gravity.CENTER
             setOnClickListener { removePanel() }
@@ -108,13 +108,35 @@ class OverlayService : Service() {
         }
         box.addView(colors); box.addView(separator())
         box.addView(TextView(this).apply {
-            text="Sobreposição visual. Não controla mira, jogadores ou memória do jogo."
+            text="Arraste pelo título para mover o painel. O botão RAM abre e minimiza este menu."
             textSize=10f; setTextColor(Color.LTGRAY)
         })
-        panel=box
-        wm.addView(box,lp(dp(280),WindowManager.LayoutParams.WRAP_CONTENT,
+        val closeOverlay = TextView(this).apply {
+            text="DESLIGAR SOBREPOSIÇÃO"; textSize=12f; typeface=Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE); gravity=Gravity.CENTER; setPadding(dp(8),dp(12),dp(8),dp(12))
+            background=GradientDrawable().apply { setColor(Color.rgb(175,25,35)); cornerRadius=dp(9).toFloat() }
+            setOnClickListener { stopSelf() }
+        }
+        box.addView(closeOverlay, LinearLayout.LayoutParams(-1,dp(44)).apply { topMargin=dp(8) })
+
+        val panelParams=lp(dp(280),WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { y=dp(110) })
+            Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { y=dp(110) }
+        var startX=0f; var startY=0f; var baseX=0; var baseY=0
+        title.setOnTouchListener { _, event ->
+            when(event.action) {
+                MotionEvent.ACTION_DOWN -> { startX=event.rawX; startY=event.rawY; baseX=panelParams.x; baseY=panelParams.y; true }
+                MotionEvent.ACTION_MOVE -> {
+                    panelParams.x=baseX+(event.rawX-startX).toInt()
+                    panelParams.y=(baseY+(event.rawY-startY).toInt()).coerceAtLeast(0)
+                    try { wm.updateViewLayout(box,panelParams) } catch (_:Exception) {}
+                    true
+                }
+                else -> true
+            }
+        }
+        panel=box
+        wm.addView(box,panelParams)
     }
 
     private fun separator()=View(this).apply {
