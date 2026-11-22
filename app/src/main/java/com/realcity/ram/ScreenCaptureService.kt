@@ -45,7 +45,8 @@ class ScreenCaptureService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)\n        else startForeground(NOTIFICATION_ID, notification())
+        if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+        else startForeground(NOTIFICATION_ID, notification())
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         @Suppress("DEPRECATION")
         val data = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
