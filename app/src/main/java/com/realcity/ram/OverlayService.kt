@@ -85,6 +85,36 @@ class OverlayService : Service() {
         box.addView(head)
         box.addView(TextView(this).apply { text="PAINEL FLUTUANTE • REAL CITY BETA"; textSize=9f; setTextColor(Color.LTGRAY) })
         box.addView(separator())
+        box.addView(TextView(this).apply {
+            text="ASSISTÊNCIA DE TREINO"; textSize=10f; setTextColor(Color.LTGRAY); typeface=Typeface.DEFAULT_BOLD
+        })
+        box.addView(Switch(this).apply {
+            text="Aim Assist (somente treino)"; setTextColor(Color.WHITE)
+            val prefs=getSharedPreferences("ram_settings_v2",Context.MODE_PRIVATE)
+            isChecked=prefs.getBoolean("aim_enabled",false)
+            setOnCheckedChangeListener { _,v -> prefs.edit().putBoolean("aim_enabled",v).apply() }
+        })
+        box.addView(TextView(this).apply {
+            text="AMIGOS / CONFIGURAÇÕES"; textSize=12f; gravity=Gravity.CENTER; setTextColor(Color.WHITE)
+            setPadding(dp(8),dp(12),dp(8),dp(12))
+            background=GradientDrawable().apply { setColor(Color.rgb(42,48,62)); cornerRadius=dp(8).toFloat() }
+            setOnClickListener {
+                val i=Intent(this@OverlayService,MainActivity::class.java).putExtra("open_tab","AMIGOS")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(i)
+            }
+        })
+        box.addView(TextView(this).apply {
+            text="ABRIR TREINAMENTO"; textSize=12f; gravity=Gravity.CENTER; setTextColor(Color.WHITE)
+            setPadding(dp(8),dp(12),dp(8),dp(12))
+            background=GradientDrawable().apply { setColor(Color.rgb(42,48,62)); cornerRadius=dp(8).toFloat() }
+            setOnClickListener {
+                val i=Intent(this@OverlayService,MainActivity::class.java).putExtra("open_tab","AIM")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(i)
+            }
+        })
+        box.addView(separator())
         box.addView(Switch(this).apply {
             text="Crosshair na tela"; setTextColor(Color.WHITE); isChecked=crosshairOn
             setOnCheckedChangeListener { _,v -> crosshairOn=v; crosshair?.invalidate() }
